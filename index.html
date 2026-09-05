@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>داشبورد گزارشات | Postgres</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+      defer
+    ></script>
+   <link rel="stylesheet" href="./style.css">
+
+  </head>
+
+  <body>
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+      <div class="sidebar-brand"><i class="fas fa-chart-pie"></i> گزارشات</div>
+      <nav class="sidebar-menu">
+        <button class="sidebar-item active" data-section="list">
+          <i class="fas fa-list-ul"></i> لیست گزارش‌ها
+        </button>
+        <button class="sidebar-item" data-section="create">
+          <i class="fas fa-plus-circle"></i> ایجاد گزارش
+        </button>
+        <button class="sidebar-item" data-section="detail">
+          <i class="fas fa-eye"></i> جزئیات
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <i class="fas fa-database"></i> Postgres · v16
+        <!-- <span class="badge-real"><i class="fas fa-server"></i> REAL</span> -->
+      </div>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <main class="main">
+      <!-- Header -->
+      <header class="page-header">
+        <h2 id="pageTitle">
+          <i class="fas fa-list-ul"></i> لیست گزارش‌ها
+          <!-- <span class="badge-real"><i class="fas fa-server"></i> REAL</span> -->
+        </h2>
+        <div class="header-actions">
+          <button
+            class="theme-toggle"
+            id="themeToggle"
+            title="تغییر حالت روز/شب"
+          >
+            <i class="fas fa-moon"></i>
+            <span class="theme-label">شب</span>
+          </button>
+          <button class="logoutBtn" id="logout-button">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="logoutLable">خروج</span>
+          </button>
+          <!-- 👇دکمه تست  -->
+          <button
+            class="btn btn-primary"
+            id="testApiBtn"
+            style="background: #22c55e"
+          >
+            <i class="fas fa-check-circle"></i> تست اتصال
+          </button>
+          <button class="btn btn-outline" id="refreshBtn">
+            <i class="fas fa-sync-alt"></i> تازه‌سازی
+          </button>
+          <button
+            class="btn btn-outline"
+            id="cancelEditBtn"
+            style="display: none"
+          >
+            <i class="fas fa-times"></i> لغو ویرایش
+          </button>
+        </div>
+      </header>
+
+      <!-- SECTION: LIST -->
+      <section class="page-section active" id="section-list">
+        <div class="card">
+          <div class="card-title">
+            <i class="fas fa-list-ul"></i> همه گزارش‌ها
+          </div>
+          <div id="reportListContainer" class="report-list">
+            <div class="empty-state">در حال بارگذاری...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: CREATE / EDIT -->
+      <section class="page-section" id="section-create">
+        <div class="card">
+          <div class="card-title">
+            <i class="fas fa-edit"></i>
+            <span id="formTitle">ایجاد گزارش جدید</span>
+          </div>
+          <form id="reportForm" novalidate>
+            <div class="form-group">
+              <label
+                ><i class="fas fa-heading"></i> عنوان گزارش
+                <span style="color: var(--error-color)">*</span></label
+              >
+              <input
+                type="text"
+                id="titleInput"
+                placeholder="عنوان گزارش را وارد کنید"
+                maxlength="225"
+                required
+              />
+              <div class="form-error" id="titleError">
+                لطفاً عنوان گزارش را وارد کنید
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-align-left"></i> توضیحات</label>
+              <textarea
+                id="descInput"
+                rows="2"
+                placeholder="توضیح مختصر درباره گزارش"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-building"></i> شناسه دپارتمان</label>
+              <input
+                type="number"
+                id="deptInput"
+                placeholder="مثلا: ۱"
+                value="1"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label
+                ><i class="fas fa-table-columns"></i> ستون‌ها (حداکثر ۱۰)
+                <span style="color: var(--error-color)">*</span></label
+              >
+              <div id="columnsContainer" class="columns-container"></div>
+              <div class="form-error" id="columnsError">
+                لطفاً نام همه ستون‌ها را وارد کنید
+              </div>
+              <div class="inline-actions">
+                <button
+                  type="button"
+                  class="btn-sm btn-sm-primary"
+                  id="addColumnBtn"
+                >
+                  <i class="fas fa-plus"></i> افزودن ستون
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label
+                ><i class="fas fa-rows"></i> ردیف‌ها (هر ردیف نام + مقادیر عددی)
+                <span style="color: var(--error-color)">*</span></label
+              >
+              <div id="rowsContainer" class="rows-container"></div>
+              <div class="form-error" id="rowsError">
+                لطفاً نام همه ردیف‌ها را وارد کنید
+              </div>
+              <div class="inline-actions">
+                <button
+                  type="button"
+                  class="btn-sm btn-sm-primary"
+                  id="addRowBtn"
+                >
+                  <i class="fas fa-plus"></i> افزودن ردیف
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              style="width: 100%; justify-content: center; margin-top: 0.8rem"
+              id="submitBtn"
+            >
+              <i class="fas fa-paper-plane"></i> ثبت گزارش
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- SECTION: DETAIL -->
+      <section class="page-section" id="section-detail">
+        <div class="card">
+          <div class="card-title"><i class="fas fa-eye"></i> جزئیات گزارش</div>
+          <div id="detailContainer" class="detail-box">
+            <span style="color: var(--text-muted)"
+              >روی هر گزارش کلیک کنید تا جزئیات نمایش داده شود.</span
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===== DELETE MODAL ===== -->
+    <div class="modal-overlay" id="deleteModal">
+      <div class="modal">
+        <h3>
+          <i class="fas fa-exclamation-triangle" style="color: #b91c1c"></i> حذف
+          گزارش
+        </h3>
+        <p>
+          آیا از حذف گزارش "<span id="deleteReportTitle"></span>" اطمینان دارید؟
+          این عمل قابل بازگشت نیست.
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-outline" id="cancelDeleteBtn">لغو</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn">
+            <i class="fas fa-trash"></i> حذف
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast" class="toast">عملیات موفق</div>
+    <!-- قبل از اسکریپت Chart.js یا بعد از اون، قبل از اسکریپت اصلی -->
+  <script src="./app.js"></script>
+  </body>
+</html>
